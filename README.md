@@ -77,3 +77,12 @@ https://your-worker.your-subdomain.workers.dev
 [![Deploy to Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare%20Workers-brightgreen)](https://deploy.workers.cloudflare.com/?url=https://github.com/linaut/Cloudflare-notepad)
 > ⚠️ 点击一键部署后，请在 Cloudflare 页面绑定 KV（NOTES_KV）后即可使用
 
+## 截图示例
+| 目录页                                                         | 编辑页                                                    |
+| ----------------------------------------------------------- | ------------------------------------------------------ |
+| ![目录页](https://github.com/user-attachments/assets/b7b747c5-c997-48f4-81d9-340ab5b7dd23) | ![编辑页](https://github.com/user-attachments/assets/9f3613bd-b7c8-401f-b165-a10ad5735fb3) |
+
+
+
+
+
