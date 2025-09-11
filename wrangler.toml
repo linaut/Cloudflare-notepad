@@ -1,5 +1,5 @@
 name = "notes-worker"
-main = "index.js"
+main = "worker.js"
 compatibility_date = "2025-09-12"
 
 [[kv_namespaces]]
