@@ -29,7 +29,6 @@ async function handleRequest(event) {
       existingObj = existingNote ? JSON.parse(existingNote) : null;
     } catch(e){ existingObj=null; }
 
-    // 如果原来是旧笔记（没有时间字段），保持已有内容，不覆盖已有时间
     const createdAt = existingObj?.created_at || new Date().toISOString();
     const updatedAt = new Date().toISOString();
 
@@ -53,27 +52,62 @@ async function handleRequest(event) {
     } catch(e){ return new Response("KV 获取失败",{status:500}); }
   }
 
-  // 目录页
-  if(url.pathname === "/"){
+  // 目录 JSON（用于自动刷新）
+  if (url.pathname === "/" && url.searchParams.get("list") === "1") {
     const list = await NOTES_KV.list();
-    let html = `<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Notes Directory</title></head><body><h1>📒 Notes</h1><ul>`;
-    for(const key of list.keys){
-      if(!key.name.match(/\.(ico|png|svg)$/i)){
-        try{
-          let note = await NOTES_KV.get(key.name);
-          if(!note) continue;
-          let data;
-          try { data = JSON.parse(note); } catch(e){ data={ content: note, created_at:null, updated_at:null }; }
-          if(!data.content.trim()) continue; // 自动跳过空内容
-          html += `<li><a href="/${encodeURIComponent(key.name)}">${key.name}</a> | 创建: <span class="created" data-time="${data.created_at||''}"></span> | 更新: <span class="updated" data-time="${data.updated_at||''}"></span></li>`;
-        } catch(e){ continue; }
+    let result = [];
+    for (const key of list.keys) {
+      if (!key.name.match(/\.(ico|png|svg)$/i)) {
+        let note = await NOTES_KV.get(key.name);
+        if (!note) continue;
+        let data;
+        try { data = JSON.parse(note); }
+        catch(e){ data={ content: note, created_at:null, updated_at:null }; }
+        if(!data.content.trim()) continue;
+        result.push({
+          name: key.name,
+          created_at: data.created_at || null,
+          updated_at: data.updated_at || null
+        });
       }
     }
-    html += `</ul>
+    // 🔽 更新时间倒序排序
+    result.sort((a,b)=>{
+      let ta = a.updated_at || a.created_at || "";
+      let tb = b.updated_at || b.created_at || "";
+      return new Date(tb) - new Date(ta);
+    });
+
+    return new Response(JSON.stringify(result), {
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  // 目录页
+  if(url.pathname === "/"){
+    let html = `<html><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📒 Notes Directory</title>
+    </head>
+    <body>
+    <h1>📒 Notes</h1><ul id="notesList"></ul>
 <script>
-const displayTime=t=>t?new Date(t).toLocaleString(undefined,{hour12:false}):"未知";
-document.querySelectorAll('.created').forEach(el=>el.textContent=displayTime(el.dataset.time));
-document.querySelectorAll('.updated').forEach(el=>el.textContent=displayTime(el.dataset.time));
+function displayTime(t){return t?new Date(t).toLocaleString(undefined,{hour12:false}):"未知";}
+async function loadList(){
+  try{
+    const resp = await fetch("/?list=1");
+    const arr = await resp.json();
+    const ul = document.getElementById("notesList");
+    ul.innerHTML="";
+    arr.forEach(item=>{
+      const li=document.createElement("li");
+      li.innerHTML = '<a href="/'+encodeURIComponent(item.name)+'">'+item.name+'</a> | 创建: '+displayTime(item.created_at)+' | 更新: '+displayTime(item.updated_at);
+      ul.appendChild(li);
+    });
+  }catch(e){console.error("加载目录失败",e);}
+}
+loadList();
+setInterval(loadList,5000);
 </script>
 </body></html>`;
     return new Response(html,{ headers:{ "Content-Type":"text/html;charset=UTF-8" } });
@@ -152,7 +186,7 @@ async function save(auto=false){
 }
 
 saveBtn.addEventListener('click',()=>save(false));
-setInterval(()=>save(true),5000);
+setInterval(()=>save(true),1000);
 </script>
 </body>
 </html>`,{ headers:{ "Content-Type":"text/html;charset=UTF-8" } });
