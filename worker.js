@@ -56,7 +56,7 @@ async function handleRequest(event) {
   // 目录页
   if(url.pathname === "/"){
     const list = await NOTES_KV.list();
-    let html = `<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Notes Directory</title></head><body><h1>Notes</h1><ul>`;
+    let html = `<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Notes Directory</title></head><body><h1>📒 Notes</h1><ul>`;
     for(const key of list.keys){
       if(!key.name.match(/\.(ico|png|svg)$/i)){
         try{
