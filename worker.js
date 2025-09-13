@@ -52,26 +52,56 @@ async function handleRequest(event) {
     } catch(e){ return new Response("KV 获取失败",{status:500}); }
   }
 
-  // 目录 JSON（用于自动刷新）
+  // ===== 修正版：目录 JSON（用于自动刷新） =====
   if (url.pathname === "/" && url.searchParams.get("list") === "1") {
     const list = await NOTES_KV.list();
     let result = [];
     for (const key of list.keys) {
-      if (!key.name.match(/\.(ico|png|svg)$/i)) {
-        let note = await NOTES_KV.get(key.name);
-        if (!note) continue;
+      // 过滤静态图标
+      if (key.name.match(/\.(ico|png|svg)$/i)) continue;
+
+      try {
+        const raw = await NOTES_KV.get(key.name);
+        if (!raw) continue;
+
+        // 尝试解析 JSON：若解析为对象且包含 content 字段 -> 当作笔记
+        // 否则如果解析失败 -> 当作纯文本笔记
+        // 如果解析成功但没有 content 字段（例如索引/metadata），则跳过
         let data;
-        try { data = JSON.parse(note); }
-        catch(e){ data={ content: note, created_at:null, updated_at:null }; }
-        if(!data.content.trim()) continue;
+        let isNote = false;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object' && parsed.hasOwnProperty('content')) {
+            data = parsed;
+            isNote = true;
+          } else {
+            // parsed JSON but not a note object (e.g. index array/object) -> skip
+            continue;
+          }
+        } catch (e) {
+          // not JSON -> treat as plain text note
+          data = { content: String(raw), created_at: null, updated_at: null };
+          isNote = true;
+        }
+
+        if (!isNote) continue;
+
+        const text = String(data.content || '');
+        if (!text.trim()) continue;
+
         result.push({
           name: key.name,
           created_at: data.created_at || null,
           updated_at: data.updated_at || null
         });
+      } catch (err) {
+        // 单个 key 异常不要中断整个列表
+        console.error("list key error:", key.name, err);
+        continue;
       }
     }
-    // 🔽 更新时间倒序排序
+
+    // 按更新时间倒序排序（若无 updated 则用 created）
     result.sort((a,b)=>{
       let ta = a.updated_at || a.created_at || "";
       let tb = b.updated_at || b.created_at || "";
@@ -83,35 +113,45 @@ async function handleRequest(event) {
     });
   }
 
-  // 目录页
-  if(url.pathname === "/"){
-    let html = `<html><head><meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📒 Notes Directory</title>
-    </head>
-    <body>
-    <h1>📒 Notes</h1><ul id="notesList"></ul>
+// 目录页
+if(url.pathname === "/"){
+  let html = `<html><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📒 Notes Directory</title>
+  <style>
+    body { font-family: sans-serif; background:#f0f0f0; padding:20px; }
+    h1 { color:#333; }
+    ul { list-style:none; padding:0; }
+    li { margin:10px 0; }
+    a { text-decoration:none; color:#0077cc; font-size:1.1em; }
+    a:hover { text-decoration:underline; }
+    .time-info { font-size:0.85em; color:#555; margin-top:2px; }
+  </style>
+  </head>
+  <body>
+  <h1>📒 Notes</h1><ul id="notesList"></ul>
 <script>
 function displayTime(t){return t?new Date(t).toLocaleString(undefined,{hour12:false}):"未知";}
 async function loadList(){
-  try{
-    const resp = await fetch("/?list=1");
-    const arr = await resp.json();
-    const ul = document.getElementById("notesList");
-    ul.innerHTML="";
-    arr.forEach(item=>{
-      const li=document.createElement("li");
-      li.innerHTML = '<a href="/'+encodeURIComponent(item.name)+'">'+item.name+'</a> | 创建: '+displayTime(item.created_at)+' | 更新: '+displayTime(item.updated_at);
-      ul.appendChild(li);
-    });
-  }catch(e){console.error("加载目录失败",e);}
+try{
+  const resp = await fetch("/?list=1");
+  const arr = await resp.json();
+  const ul = document.getElementById("notesList");
+  ul.innerHTML="";
+  arr.forEach(item=>{
+    const li=document.createElement("li");
+    li.innerHTML = '<a href="/'+encodeURIComponent(item.name)+'">'+item.name+'</a>'
+                 + '<div class="time-info">创建: '+displayTime(item.created_at)+' | 更新: '+displayTime(item.updated_at)+'</div>';
+    ul.appendChild(li);
+  });
+}catch(e){console.error("加载目录失败",e);}
 }
 loadList();
 setInterval(loadList,5000);
 </script>
 </body></html>`;
-    return new Response(html,{ headers:{ "Content-Type":"text/html;charset=UTF-8" } });
-  }
+  return new Response(html,{ headers:{ "Content-Type":"text/html;charset=UTF-8" } });
+}
 
   // 编辑页
   let note;
