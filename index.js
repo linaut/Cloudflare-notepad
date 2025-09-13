@@ -86,7 +86,11 @@ if(url.pathname === "/"){
     li { margin:10px 0; }
     a { text-decoration:none; color:#0077cc; font-size:1.1em; }
     a:hover { text-decoration:underline; }
-    .time-info { font-size:0.85em; color:#555; margin-top:2px; }
+    .time-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8em;
+    }  // flex均分目录时间信息一行显示
   </style>
   </head>
   <body>
