@@ -74,35 +74,45 @@ async function handleRequest(event) {
     }
   }
 
-  // 目录页
-  if(url.pathname === "/"){
-    let html = `<html><head><meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📒 Notes Directory</title>
-    </head>
-    <body>
-    <h1>📒 Notes</h1><ul id="notesList"></ul>
+// 目录页
+if(url.pathname === "/"){
+  let html = `<html><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📒 Notes Directory</title>
+  <style>
+    body { font-family: sans-serif; background:#f0f0f0; padding:20px; }
+    h1 { color:#333; }
+    ul { list-style:none; padding:0; }
+    li { margin:10px 0; }
+    a { text-decoration:none; color:#0077cc; font-size:1.1em; }
+    a:hover { text-decoration:underline; }
+    .time-info { font-size:0.85em; color:#555; margin-top:2px; }
+  </style>
+  </head>
+  <body>
+  <h1>📒 Notes</h1><ul id="notesList"></ul>
 <script>
 function displayTime(t){return t?new Date(t).toLocaleString(undefined,{hour12:false}):"未知";}
 async function loadList(){
-  try{
-    const resp = await fetch("/?list=1");
-    const arr = await resp.json();
-    const ul = document.getElementById("notesList");
-    ul.innerHTML="";
-    arr.forEach(item=>{
-      const li=document.createElement("li");
-      li.innerHTML = '<a href="/'+encodeURIComponent(item.name)+'">'+item.name+'</a> | 创建: '+displayTime(item.created_at)+' | 更新: '+displayTime(item.updated_at);
-      ul.appendChild(li);
-    });
-  }catch(e){console.error("加载目录失败",e);}
+try{
+  const resp = await fetch("/?list=1");
+  const arr = await resp.json();
+  const ul = document.getElementById("notesList");
+  ul.innerHTML="";
+  arr.forEach(item=>{
+    const li=document.createElement("li");
+    li.innerHTML = '<a href="/'+encodeURIComponent(item.name)+'">'+item.name+'</a>'
+                 + '<div class="time-info">创建: '+displayTime(item.created_at)+' | 更新: '+displayTime(item.updated_at)+'</div>';
+    ul.appendChild(li);
+  });
+}catch(e){console.error("加载目录失败",e);}
 }
 loadList();
 setInterval(loadList,5000);
 </script>
 </body></html>`;
-    return new Response(html,{ headers:{ "Content-Type":"text/html;charset=UTF-8" } });
-  }
+  return new Response(html,{ headers:{ "Content-Type":"text/html;charset=UTF-8" } });
+}
 
   // 编辑页
   let note;
