@@ -108,7 +108,7 @@ try{
 }catch(e){console.error("加载目录失败",e);}
 }
 loadList();
-setInterval(loadList,5000);
+setInterval(loadList,1000);
 </script>
 </body></html>`;
   return new Response(html,{ headers:{ "Content-Type":"text/html;charset=UTF-8" } });
@@ -132,7 +132,7 @@ setInterval(loadList,5000);
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${noteName}</title>
+<title>📒 ${noteName}</title>
 <style>
 body{margin:0;background:#ebeef1;}
 .container{position:absolute;top:20px;right:20px;bottom:20px;left:20px;}
@@ -172,8 +172,13 @@ async function save(auto=false){
       if(data.deleted){
         textarea.value="";
         if(!auto) status.textContent='笔记已删除';
+        setTimeout(()=>status.textContent='', 3000); // 3秒后清空提示
+        document.querySelector('.created').dataset.time = "";
+        document.querySelector('.updated').dataset.time = "";
+        updateTimeDisplays();
       } else {
         if(!auto) status.textContent='已保存: '+new Date().toLocaleString(undefined,{hour12:false});
+        setTimeout(()=>status.textContent='', 3000); // 3秒后清空提示
         if(data.updated_at){
           document.querySelector('.updated').dataset.time = data.updated_at;
         }
