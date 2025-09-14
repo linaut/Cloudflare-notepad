@@ -125,7 +125,7 @@ if(url.pathname === "/"){
     li { margin:10px 0; }
     a { text-decoration:none; color:#0077cc; font-size:1.1em; }
     a:hover { text-decoration:underline; }
-// flex均分目录时间信息一行显示
+/* flex均分目录时间信息一行显示 */
     .time-info {
       display: flex;
       justify-content: space-between;
@@ -183,7 +183,7 @@ setInterval(loadList,5000);
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${noteName}</title>
+<title>📒 ${noteName}</title>
 <style>
 body{margin:0;background:#ebeef1;}
 .container{position:absolute;top:20px;right:20px;bottom:20px;left:20px;}
