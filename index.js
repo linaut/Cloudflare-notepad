@@ -86,11 +86,20 @@ if(url.pathname === "/"){
     li { margin:10px 0; }
     a { text-decoration:none; color:#0077cc; font-size:1.1em; }
     a:hover { text-decoration:underline; }
+
+// flex均分目录时间信息一行显示
     .time-info {
       display: flex;
       justify-content: space-between;
-      font-size: 0.8em;
-    }  // flex均分目录时间信息一行显示
+      font-size: 0.8em;color:#555
+    }
+/* 自动深色模式 */
+    @media (prefers-color-scheme: dark) {
+      body { background:#121212; color:#f0f0f0; }
+      h1 { color:#ddd; }
+      a { color:#80b3ff; }
+      .time-info { color:#ccc; }
+    }
   </style>
   </head>
   <body>
