@@ -94,7 +94,6 @@ if(url.pathname === "/"){
       font-size: 12px; color:#555;
       margin-top: 2px;
     }
-    
     /* 自动深色模式 */
     @media (prefers-color-scheme: dark) {
       body { background:#121212; color:#f0f0f0; }
