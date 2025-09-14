@@ -125,7 +125,19 @@ if(url.pathname === "/"){
     li { margin:10px 0; }
     a { text-decoration:none; color:#0077cc; font-size:1.1em; }
     a:hover { text-decoration:underline; }
-    .time-info { font-size:0.85em; color:#555; margin-top:2px; }
+// flex均分目录时间信息一行显示
+    .time-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8em;color:#555
+    }
+/* 自动深色模式 */
+    @media (prefers-color-scheme: dark) {
+      body { background:#121212; color:#f0f0f0; }
+      h1 { color:#ddd; }
+      a { color:#80b3ff; }
+      .time-info { color:#ccc; }
+    }
   </style>
   </head>
   <body>
@@ -211,8 +223,13 @@ async function save(auto=false){
       if(data.deleted){
         textarea.value="";
         if(!auto) status.textContent='笔记已删除';
+        setTimeout(()=>status.textContent='', 3000); // 3秒后清空提示
+        document.querySelector('.created').dataset.time = "";
+        document.querySelector('.updated').dataset.time = "";
+        updateTimeDisplays();
       } else {
         if(!auto) status.textContent='已保存: '+new Date().toLocaleString(undefined,{hour12:false});
+        setTimeout(()=>status.textContent='', 3000); // 3秒后清空提示
         if(data.updated_at){
           document.querySelector('.updated').dataset.time = data.updated_at;
         }
