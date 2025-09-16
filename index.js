@@ -12,6 +12,19 @@ async function handleRequest(event) {
   let noteName;
   try { noteName = decodeURIComponent(url.pathname.slice(1)) || generateRandomNote(); } catch(e){ noteName = generateRandomNote(); }
 
+  function isValidNoteName(name){
+    if(!name || name.length > 50) return false;
+  // 排除控制字符和路径符号
+  if(/[\u0000-\u001F\u007F\/\\]/.test(name)) return false;
+    return true;
+  }
+
+  // 非法笔记名直接提示
+  if(!isValidNoteName(noteName) && url.pathname !== "/"){
+    return new Response(`<script>alert("笔记名非法");history.back();</script>`, 
+      { headers:{ "Content-Type":"text/html;charset=UTF-8" } });
+  }
+  
   const method = request.method;
   const isRaw = url.searchParams.has("raw");
 
@@ -22,7 +35,6 @@ async function handleRequest(event) {
     // 删除空文件
     if(!text.trim()){
       try { await NOTES_KV.delete(noteName); } catch(e){ console.error("删除 KV 失败:", e); }
-      // 更新索引
       await updateIndex(noteName, null);
       return new Response(JSON.stringify({ deleted:true }), { headers:{ "Content-Type":"application/json" } });
     }
@@ -74,59 +86,59 @@ async function handleRequest(event) {
     }
   }
 
-// 目录页
-if(url.pathname === "/"){
-  let html = `<html><head><meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📒 Notes Directory</title>
-  <style>
-    body { font-family: sans-serif; background:#f0f0f0; padding:20px; }
-    h1 { color:#333; }
-    ul { list-style:none; padding:0; }
-    li { margin:10px 0; }
-    a { text-decoration:none; color:#0077cc; font-size:1.1em; }
-    a:hover { text-decoration:underline; }
-    
-    /* 均分布局（默认样式） */
-    .time-info {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px; color:#555;
-      margin-top: 2px;
-    }
-    /* 自动深色模式 */
-    @media (prefers-color-scheme: dark) {
-      body { background:#121212; color:#f0f0f0; }
-      h1 { color:#ddd; }
-      a { color:#80b3ff; }
-      .time-info { color:#ccc; }
-    }
-  </style>
-  </head>
-  <body>
-  <h1>📒 Notes</h1><ul id="notesList"></ul>
+  // 目录页
+  if(url.pathname === "/"){
+    let html = `<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📒 Notes Directory</title>
+<style>
+body { font-family: sans-serif; background:#f0f0f0; padding:20px; }
+h1 { color:#333; }
+ul { list-style:none; padding:0; }
+li { margin:10px 0; }
+a { text-decoration:none; color:#0077cc; font-size:1.1em; }
+a:hover { text-decoration:underline; }
+
+/* 均分布局（默认样式） */
+.time-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px; color:#555;
+  margin-top: 0px;
+}
+/* 自动深色模式 */
+@media (prefers-color-scheme: dark) {
+  body { background:#121212; color:#f0f0f0; }
+  h1 { color:#ddd; }
+  a { color:#80b3ff; }
+  .time-info { color:#ccc; }
+}
+</style>
+</head>
+<body>
+<h1>📒 Notes</h1><ul id="notesList"></ul>
 <script>
 function displayTime(t){return t?new Date(t).toLocaleString(undefined,{hour12:false}):"未知";}
 async function loadList(){
-try{
-  const resp = await fetch("/?list=1");
-  const arr = await resp.json();
-  const ul = document.getElementById("notesList");
-  ul.innerHTML="";
-  arr.forEach(item=>{
-    const li=document.createElement("li");
-    li.innerHTML = '<a href="/'+encodeURIComponent(item.name)+'">'+item.name+'</a>'
-                 + '<div class="time-info">创建: '+displayTime(item.created_at)+' | 更新: '+displayTime(item.updated_at)+'</div>';
-    ul.appendChild(li);
-  });
-}catch(e){console.error("加载目录失败",e);}
+  try{
+    const resp = await fetch("/?list=1");
+    const arr = await resp.json();
+    const ul = document.getElementById("notesList");
+    ul.innerHTML="";
+    arr.forEach(item=>{
+      const li=document.createElement("li");
+      li.innerHTML = '<a href="/'+encodeURIComponent(item.name)+'">'+item.name+'</a>'
+                   + '<div class="time-info">创建: '+displayTime(item.created_at)+' | 更新: '+displayTime(item.updated_at)+'</div>';
+      ul.appendChild(li);
+    });
+  }catch(e){console.error("加载目录失败",e);}
 }
 loadList();
 setInterval(loadList,1000);
 </script>
 </body></html>`;
-  return new Response(html,{ headers:{ "Content-Type":"text/html;charset=UTF-8" } });
-}
+    return new Response(html,{ headers:{ "Content-Type":"text/html;charset=UTF-8" } });
+  }
 
   // 编辑页
   let note;
@@ -186,13 +198,13 @@ async function save(auto=false){
       if(data.deleted){
         textarea.value="";
         if(!auto) status.textContent='笔记已删除';
-        setTimeout(()=>status.textContent='', 3000); // 3秒后清空提示
+        setTimeout(()=>status.textContent='', 3000);
         document.querySelector('.created').dataset.time = "";
         document.querySelector('.updated').dataset.time = "";
         updateTimeDisplays();
       } else {
         if(!auto) status.textContent='已保存: '+new Date().toLocaleString(undefined,{hour12:false});
-        setTimeout(()=>status.textContent='', 3000); // 3秒后清空提示
+        setTimeout(()=>status.textContent='', 3000);
         if(data.updated_at){
           document.querySelector('.updated').dataset.time = data.updated_at;
         }
